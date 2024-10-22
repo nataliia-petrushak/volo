@@ -1,18 +1,26 @@
-import asyncio
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
-from ollama import AsyncClient
 import io
+import boto3
 from faster_whisper import WhisperModel
 from starlette.websockets import WebSocketDisconnect, WebSocketState
+import logging
+import json
 
 from text_to_speech import ElevenLabsProcessor
-import logging
+from config import settings
 
 logging.basicConfig()
 logging.getLogger("faster_whisper").setLevel(logging.DEBUG)
 
 app = FastAPI()
+
+bedrock_client = boto3.client('bedrock-runtime', 
+                      aws_access_key_id=settings.AWS_SERVER_PUBLIC_KEY, 
+                      aws_secret_access_key=settings.AWS_SERVER_SECRET_KEY, 
+                      region_name=settings.REGION_NAME,
+                      aws_session_token=settings.AWS_SESSION_TOKEN
+                      )
 
 # sio = socketio.AsyncServer(cors_allowed_origins="http://localhost:3000", async_mode='asgi')
 # socket_app = socketio.ASGIApp(sio)
@@ -46,22 +54,28 @@ app.add_middleware(
 
 async def stream_chat_response(websocket: WebSocket, user_input: str):
     """
-    Streams chat response using Ollama's AsyncClient for real-time token streaming.
+    Streams chat response using Amazon Bedrock for real-time token streaming.
     """
-    # Prepare the message for Ollama's chat
-    message = {
-        "role": "user",
-        "content": user_input
+    request_body = {
+        "prompt": ("<|begin_of_text|><|start_header_id|>system<|end_header_id|>You are a helpful assistant.<|eot_id|>"
+                   f"<|start_header_id|>user<|end_header_id|>{user_input}<|eot_id|>"
+                   "<|start_header_id|>assistant<|end_header_id|>"),
+        "max_gen_len": 128,
+        "temperature": 0.5
     }
-
-    # Initiate streaming with Ollama's AsyncClient
-    async for part in await AsyncClient().chat(
-            model="llama3.2:1b", messages=[message], stream=True
-    ):
-        # Send each part of the message content as it's generated
-        await websocket.send_text(part["message"]["content"])
-        await asyncio.sleep(0)
-        # Yield control to allow continuous streaming
+    
+    try:
+        streaming_response  = bedrock_client.invoke_model_with_response_stream(
+                modelId=settings.MODEL_ID,
+                body=json.dumps(request_body)
+            )
+        
+        for event in streaming_response["body"]:
+            chunk = json.loads(event["chunk"]["bytes"])
+            if "generation" in chunk:
+                await websocket.send_text(chunk["generation"])
+    except Exception as e:
+        print(f"Error: {str(e)}")
 
 
 @app.websocket("/text-to-text/ws")
