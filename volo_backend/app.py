@@ -2,11 +2,7 @@ import asyncio
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from ollama import AsyncClient
-import soundfile
-import numpy as np
 import io
-import librosa
-import sounddevice as sd
 from faster_whisper import WhisperModel
 from starlette.websockets import WebSocketDisconnect, WebSocketState
 
@@ -15,7 +11,6 @@ import logging
 
 logging.basicConfig()
 logging.getLogger("faster_whisper").setLevel(logging.DEBUG)
-import socketio
 
 app = FastAPI()
 
