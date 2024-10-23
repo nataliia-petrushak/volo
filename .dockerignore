@@ -1,0 +1,8 @@
+.venv/
+volo_backend/venv/
+*__pycache__/
+.idea
+app.egg-info
+build
+.coverage
+htmlcov
