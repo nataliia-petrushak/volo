@@ -5,6 +5,7 @@ class AppSettings(BaseSettings):
     AWS_SERVER_PUBLIC_KEY: str
     AWS_SERVER_SECRET_KEY: str
     AWS_SESSION_TOKEN: str
+    AWS_PROFILE_NAME: str
     REGION_NAME: str
     MODEL_ID: str
 
