@@ -106,7 +106,7 @@ function App() {
   useEffect(() => {
     if (buffers.length > 0) {
       const audioData = new Uint8Array(buffers.flat());
-      const blob = new Blob([audioData], {type: "audio/mpeg"});
+      const blob = new Blob([audioData], {type: "audio/wav"});
       const url = window.URL.createObjectURL(blob);
       setUrlQueue((prevUrlQueue) => [...prevUrlQueue, url]);
       setBuffers([]);

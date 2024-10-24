@@ -11,6 +11,8 @@ class BedrockService:
     def __init__(self) -> None:
         self.client = BedrockLLM(
             credentials_profile_name=settings.AWS_PROFILE_NAME,
+            aws_access_key_id=settings.AWS_SERVER_PUBLIC_KEY,
+            aws_secret_access_key=settings.AWS_SERVER_SECRET_KEY,
             model_id=settings.MODEL_ID,
             streaming=True,
             region=settings.REGION_NAME,
