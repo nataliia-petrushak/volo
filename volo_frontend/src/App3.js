@@ -54,13 +54,12 @@ export function App3() {
             audioStreamRef.current.getTracks().forEach((track) => track.stop());
         }
         setRecording(false);
-        socket.close()
     };
 
     const handleDataAvailable = (event) => {
         if (event.data.size > 0) {
             socket.send(event.data);
-            setRecordedChunks((prev) => [...prev, event.data]);
+            setRecordedChunks(event.data);
         }
     };
 
