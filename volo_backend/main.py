@@ -6,6 +6,7 @@ from fastapi import FastAPI, WebSocket, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from faster_whisper import WhisperModel
 from services import ElevenLabsService, BedrockService
+from services import WhisperService
 
 
 logging.basicConfig()
@@ -52,17 +53,13 @@ async def voice_to_voice(websocket: WebSocket):
     model = WhisperModel("tiny", device="cpu", compute_type="int8")
     result = ""
     await websocket.accept()
-    # while True:
-    # try:
-    print("start receiving")
-    message = await websocket.receive_bytes()
-    print("received")
-    segments, info = model.transcribe(io.BytesIO(message), language="en", beam_size=3)
-    for segment in segments:
-        result += segment.text
-    # except WebSocketDisconnect:
-    #     break
-    print(result)
+    while True:
+        message = await websocket.receive_bytes()
+        segments, info = model.transcribe(io.BytesIO(message), language="en", beam_size=3)
+        for segment in segments:
+            result += segment.text
+        print(result)
+        result = ""
 
 
 if __name__ == "__main__":

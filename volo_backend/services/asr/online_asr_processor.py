@@ -7,7 +7,7 @@ from mosestokenizer import MosesTokenizer
 from wtpsplit import WtP
 
 from .hypotesis_buffer import HypothesisBuffer
-from core import config
+from core import settings
 
 
 class UkrainianTokenizer:
@@ -65,8 +65,8 @@ class OnlineASRProcessor:
     def create_tokenizer(self):
         """returns an object that has split function that works like the one of MosesTokenizer"""
 
-        if self.asr.language not in config.WHISPER_LANG_CODES:
-            raise ValueError("language must be Whisper's supported lang code: " + " ".join(config.WHISPER_LANG_CODES))
+        if self.asr.language not in settings.WHISPER_LANG_CODES:
+            raise ValueError("language must be Whisper's supported lang code: " + " ".join(settings.WHISPER_LANG_CODES))
 
         if self.asr.language == "uk":
             return UkrainianTokenizer()
