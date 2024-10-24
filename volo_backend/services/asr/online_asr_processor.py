@@ -123,7 +123,7 @@ class OnlineASRProcessor:
         res = self.asr.transcribe(self.audio_buffer, init_prompt=prompt)
 
         # transform to [(beg,end,"word1"), ...]
-        timestamped_words = self.asr.ts_words(res)
+        timestamped_words = self.asr.timestamped_words(res)
 
         self.transcript_buffer.insert(timestamped_words, self.buffer_time_offset)
         o = self.transcript_buffer.flush()
