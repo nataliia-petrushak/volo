@@ -1,8 +1,7 @@
-import json
 import typing
 
 from elevenlabs import stream
-from elevenlabs.client import ElevenLabs  # can also use async
+from elevenlabs.client import ElevenLabs
 
 from core import settings
 from services.bedrock import BedrockService
@@ -15,20 +14,17 @@ class ElevenLabsService:
         self.model = settings.ELEVENLABS_MODEL_NAME
         self.bedrock_service = BedrockService()
 
-    def process_user_input(self, user_input: str) -> typing.Generator:
+    async def process_user_input(self, user_input: str) -> typing.AsyncIterator[str]:
         sentence = ""
-        streaming_response = self.bedrock_service.send_request(user_input)
 
-        for event in streaming_response["body"]:
-            chunk = json.loads(event["chunk"]["bytes"])
-            if "generation" in chunk:
-                sentence += chunk["generation"]
-                if chunk["generation"] in ".!?":
-                    yield sentence
-                    sentence = ""
+        async for chunk in self.bedrock_service.process_response(user_input):
+            sentence += chunk
+            if chunk in ".!?":
+                yield sentence
+                sentence = ""
 
     async def to_sound(self, user_input: str, websocket) -> None:
-        for sentence in self.process_user_input(user_input=user_input):
+        async for sentence in self.process_user_input(user_input=user_input):
             audio = self.client.generate(
                 text=sentence,
                 voice=self.voice_id,
