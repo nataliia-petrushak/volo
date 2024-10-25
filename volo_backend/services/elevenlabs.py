@@ -31,5 +31,4 @@ class ElevenLabsService:
                 model=self.model,
                 stream=True
             )
-            audio_stream = stream(audio)
-            await websocket.send_bytes(audio_stream)
+            await websocket.send_bytes(audio)
