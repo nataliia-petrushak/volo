@@ -1,0 +1,93 @@
+.audio-recorder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9fb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+h2 {
+    color: #333;
+    font-size: 1.5em;
+    margin-bottom: 20px;
+}
+
+.button-group {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+button {
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s, transform 0.1s;
+    min-width: 100px;
+    color: #fff;
+    outline: none;
+}
+
+button:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.record-btn {
+    background-color: #e74c3c;
+}
+
+.record-btn:hover:not(:disabled) {
+    background-color: #c0392b;
+}
+
+.stop-btn {
+    background-color: #333;
+}
+
+.stop-btn:hover:not(:disabled) {
+    background-color: #222;
+}
+
+.play-btn {
+    background-color: #4caf50;
+}
+
+.play-btn:hover:not(:disabled) {
+    background-color: #388e3c;
+}
+
+.upload-btn {
+    background-color: #1e88e5;
+}
+
+.upload-btn:hover:not(:disabled) {
+    background-color: #1565c0;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.audio-player-container {
+    width: 100%;
+    max-width: 400px;
+    margin-top: 10px;
+    background: #fff;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+}
+
+.audio-player {
+    width: 100%;
+}

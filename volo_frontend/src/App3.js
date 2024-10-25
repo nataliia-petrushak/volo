@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import './AudioInterface.css';
 
 export function App3() {
     const [recording, setRecording] = useState(false);
@@ -37,7 +38,7 @@ export function App3() {
                 mediaRecorderRef.current = mediaRecorder;
 
                 mediaRecorder.addEventListener('dataavailable', handleDataAvailable);
-                mediaRecorder.start();
+                mediaRecorder.start(250);
 
                 setRecording(true);
             })
@@ -54,6 +55,7 @@ export function App3() {
             audioStreamRef.current.getTracks().forEach((track) => track.stop());
         }
         setRecording(false);
+        socket.send("End")
     };
 
     const handleDataAvailable = (event) => {
@@ -65,7 +67,7 @@ export function App3() {
 
     const playRecordedAudio = () => {
         if (recordedChunks.length > 0) {
-            const blob = new Blob(recordedChunks, { type: 'audio/wav' });
+            const blob = new Blob(recordedChunks, { type: 'audio/mpeg' });
             const audioURL = URL.createObjectURL(blob);
             setAudioURL(audioURL);
         }
@@ -95,15 +97,25 @@ export function App3() {
     };
 
     return (
-        <div>
-            <button onClick={startRecording} disabled={recording}>Start Recording</button>
-            <button onClick={stopRecording} disabled={!recording}>Stop Recording</button>
-            <button onClick={playRecordedAudio} disabled={!recordedChunks.length}>Play Recorded Audio</button>
-            <br/><br/>
-            <audio controls src={audioURL}></audio>
-            <br/>
-            <br/><br/>
-            <button onClick={uploadAudio} disabled={!recordedChunks.length}>Upload Audio</button>
+        <div className="audio-recorder">
+            <h2>Audio Recorder</h2>
+            <div className="button-group">
+                <button className="record-btn" onClick={startRecording} disabled={recording}>
+                    🎙️ Start Recording
+                </button>
+                <button className="stop-btn" onClick={stopRecording} disabled={!recording}>
+                    ⏹️ Stop Recording
+                </button>
+                <button className="play-btn" onClick={playRecordedAudio} disabled={!recordedChunks.length}>
+                    ▶️ Play Audio
+                </button>
+                <button className="upload-btn" onClick={uploadAudio} disabled={!recordedChunks.length}>
+                    ⬆️ Upload
+                </button>
+            </div>
+            <div className="audio-player-container">
+                <audio controls src={audioURL} className="audio-player"></audio>
+            </div>
         </div>
     );
 }
