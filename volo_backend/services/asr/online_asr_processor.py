@@ -174,7 +174,7 @@ class OnlineASRProcessor:
 
     def chunk_at(self, time):
         """trims the hypothesis and audio buffer at 'time'"""
-        self.transcript_buffer.pop_commited(time)
+        self.transcript_buffer.pop_saved(time)
         cut_seconds = time - self.buffer_time_offset
         self.audio_buffer = self.audio_buffer[int(cut_seconds * self.SAMPLING_RATE):]
         self.buffer_time_offset = time
