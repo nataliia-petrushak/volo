@@ -88,12 +88,10 @@ function App() {
         setIsResponding(false);
       }
       if (message instanceof Blob) {
-        const reader = new FileReader();
-        reader.onload = function () {
-          const arrayBuffer = reader.result;
-          setBuffers((prevBuffers) => [...prevBuffers, arrayBuffer]);  // Accumulate audio data
-        };
-        reader.readAsArrayBuffer(message);  // Convert Blob to ArrayBuffer for audio playback
+          setBuffers((prevBuffers) => [...prevBuffers, message]);
+          const url = window.URL.createObjectURL(message);
+          setUrlQueue((prevUrlQueue) => [...prevUrlQueue, url]);
+          setBuffers([]);
       }
     }
 
@@ -103,15 +101,6 @@ function App() {
     }
   }, [socket, pathname]);
 
-  useEffect(() => {
-    if (buffers.length > 0) {
-      const audioData = new Uint8Array(buffers.flat());
-      const blob = new Blob([audioData], {type: "audio/wav"});
-      const url = window.URL.createObjectURL(blob);
-      setUrlQueue((prevUrlQueue) => [...prevUrlQueue, url]);
-      setBuffers([]);
-    }
-  }, [buffers]);
 
   useEffect(() => {
     const playNAudio = async () => {
@@ -122,13 +111,14 @@ function App() {
           setAudioPlaying(audio);
 
           audio.src = nextUrl;
-          audio.autoplay = true;
+          // audio.autoplay = true;
           audio.preload = "auto";
           setIsPlaying(true);
           audio.onended = () => {
             setIsPlaying(false);
             setUrlQueue((prevQ) => prevQ.slice(1));
           };
+          await audio.play();
           setAudioElem(audio);
         }
       } catch (error) {
