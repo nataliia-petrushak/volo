@@ -1,7 +1,6 @@
 import sys
 import tokenize_uk
 
-import numpy as np
 from loguru import logger
 from mosestokenizer import MosesTokenizer
 from wtpsplit import WtP
@@ -54,7 +53,7 @@ class OnlineASRProcessor:
 
     def init(self, offset=None):
         """Run this when starting or restarting processing"""
-        self.audio_buffer = np.array([], dtype=np.float32)
+        self.audio_buffer = b""
         self.transcript_buffer = HypothesisBuffer(log_file=self.log_file)
         self.buffer_time_offset = 0
         if offset is not None:
@@ -87,7 +86,7 @@ class OnlineASRProcessor:
         return WtPtok(language=self.asr.language)
 
     def insert_audio_chunk(self, audio):
-        self.audio_buffer = np.append(self.audio_buffer, audio)
+        self.audio_buffer += audio
 
     def prompt(self) -> tuple:
         """Returns a tuple: (prompt, context), where "prompt" is a 200-character suffix of committed text that
@@ -115,11 +114,6 @@ class OnlineASRProcessor:
         The non-empty text is confirmed (committed) partial transcript.
         """
         prompt, non_prompt = self.prompt()
-        logger.debug(f"PROMPT: {prompt}")
-        logger.debug(f"CONTEXT: {non_prompt}")
-        logger.warning(len(self.audio_buffer))
-        logger.debug(
-            f"transcribing {len(self.audio_buffer) / self.SAMPLING_RATE:2.2f} seconds from {self.buffer_time_offset:2.2f}")
         res = self.asr.transcribe(self.audio_buffer, init_prompt=prompt)
 
         # transform to [(beg,end,"word1"), ...]
@@ -128,34 +122,13 @@ class OnlineASRProcessor:
         self.transcript_buffer.insert(timestamped_words, self.buffer_time_offset)
         o = self.transcript_buffer.flush()
         self.committed.extend(o)
-        completed = self.to_flush(o)
-        logger.debug(f">>>>COMPLETE NOW: {completed}")
-        # the_rest = self.to_flush(self.transcript_buffer.complete())
-        # logger.debug(f"INCOMPLETE: {the_rest}")
-
         # there is a newly confirmed text
 
         if o and self.buffer_trimming_way == "sentence":  # trim the completed sentences
             if len(self.audio_buffer) / self.SAMPLING_RATE > self.buffer_trimming_sec:  # longer than this
                 self.chunk_completed_sentence()
 
-        if self.buffer_trimming_way == "segment":
-            s = self.buffer_trimming_sec  # trim the completed segments longer than s,
-        else:
-            s = 30  # if the audio buffer is longer than 30s, trim it
-
-        if len(self.audio_buffer) / self.SAMPLING_RATE > s:
-            self.chunk_completed_segment(res)
-
-            # alternative: on any word
-            # l = self.buffer_time_offset + len(self.audio_buffer)/self.SAMPLING_RATE - 10
-            # let's find committed word that is less
-            # k = len(self.committed)-1
-            # while k>0 and self.committed[k][1] > l:
-            #    k -= 1
-            # t = self.committed[k][1]
-            # logger.debug("chunking segment")
-            # self.chunk_at(t)
+        self.chunk_completed_segment(res)
 
         logger.debug(f"len of buffer now: {len(self.audio_buffer) / self.SAMPLING_RATE:2.2f}")
         return self.to_flush(o)
@@ -211,48 +184,46 @@ class OnlineASRProcessor:
         Returns: [(beg,end,"sentence 1"),...]
         """
 
-        cwords = [w for w in words]
-        t = " ".join(o[2] for o in cwords)
-        s = self.tokenizer.split(t)
-        out = []
-        while s:
-            beg = None
-            end = None
-            sent = s.pop(0).strip()
-            fsent = sent
-            while cwords:
-                b, e, w = cwords.pop(0)
+        words_copy = words[:]
+        text = " ".join(o[2] for o in words_copy)
+        sentences = self.tokenizer.split(text)
+        output = []
+        word_index = 0
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+            beg, end = None, None
+            accumulated_text = ""
+
+            while word_index < len(words_copy):
+                b, e, w = words_copy[word_index]
                 w = w.strip()
-                if beg is None and sent.startswith(w):
+                if beg is None:
                     beg = b
-                elif end is None and sent == w:
+
+                accumulated_text += w
+                word_index += 1
+
+                if accumulated_text.strip() == sentence:
                     end = e
-                    out.append((beg, end, fsent))
+                    output.append((beg, end, sentence))
                     break
-                sent = sent[len(w):].strip()
-        return out
+        return output
 
-    def finish(self):
+    def finish(self) -> str:
         """Flush the incomplete text when the whole processing ends.
-        Returns: the same format as self.process_iter()
+        Returns: string
         """
-        o = self.transcript_buffer.complete()
-        f = self.to_flush(o)
-        logger.debug(f"last, not committed: {f}")
+        output = self.transcript_buffer.complete()
+        result = self.to_flush(output)
+        logger.debug(f"last, not committed: {result}")
         self.buffer_time_offset += len(self.audio_buffer) / 16000
-        return f
+        return result
 
-    def to_flush(self, sentences, separator=None, offset=0, ) -> tuple:
+    def to_flush(self, sentences, separator=None) -> str:
         # Concatenates the timestamped words or sentences into one sequence that is flushed in one line
-        # sentences: [(beg1, end1, "sentence1"), ...] or [] if empty
-        # return: (beg1, end-of-last-sentence,"concatenation of sentences") or (None, None, "") if empty
+        # sentences: ["sentence1", ...] or [] if empty
+        # return: "concatenation of sentences" or "" if empty
         if separator is None:
             separator = self.asr.separator
-        t = separator.join(s[2] for s in sentences)
-        if len(sentences) == 0:
-            b = None
-            e = None
-        else:
-            b = offset + sentences[0][0]
-            e = offset + sentences[-1][1]
-        return b, e, t
+        return separator.join(s[2] for s in sentences)

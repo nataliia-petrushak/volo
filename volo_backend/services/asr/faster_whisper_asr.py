@@ -1,3 +1,5 @@
+import io
+
 from faster_whisper import WhisperModel
 from loguru import logger
 
@@ -39,21 +41,19 @@ class FasterWhisperASR(ASRBase):
     def transcribe(self, audio, init_prompt: str = "") -> list:
         # tested: beam_size=5 is faster and better than 1 (on one 200 second document from En ESIC, min chunk 0.01)
         segments, info = self.model.transcribe(
-            audio,
+            io.BytesIO(audio),
             language=self.language,
             initial_prompt=init_prompt,
-            beam_size=5,
+            beam_size=3,
             word_timestamps=True,
             condition_on_previous_text=True,
             **self.transcribe_kwargs
         )
-        logger.debug(info)  # info contains language detection result
-
         return list(segments)
 
     @staticmethod
     def timestamped_words(segments):
-        o = []
+        result = []
         for segment in segments:
             for word_item in segment.words:
                 if segment.no_speech_prob > 0.9:
@@ -61,8 +61,8 @@ class FasterWhisperASR(ASRBase):
                 # not stripping the spaces -- should not be merged with them!
                 word = word_item.word
                 timestamped = (word_item.start, word_item.end, word)
-                o.append(timestamped)
-        return o
+                result.append(timestamped)
+        return result
 
     @staticmethod
     def segments_end_ts(res):

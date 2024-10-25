@@ -1,13 +1,10 @@
-import io
 import uvicorn
 import logging
+from loguru import logger
 
 from fastapi import FastAPI, WebSocket, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from faster_whisper import WhisperModel
-from services import ElevenLabsService, BedrockService
-from services import WhisperService
-
+from services import ElevenLabsService, BedrockService, StreamingService
 
 logging.basicConfig()
 logging.getLogger("faster_whisper").setLevel(logging.DEBUG)
@@ -50,16 +47,15 @@ async def text_to_speech(
 
 @app.websocket("/voice-to-voice/ws")
 async def voice_to_voice(websocket: WebSocket):
-    model = WhisperModel("tiny", device="cpu", compute_type="int8")
-    result = ""
+    user_input = ""
     await websocket.accept()
-    while True:
-        message = await websocket.receive_bytes()
-        segments, info = model.transcribe(io.BytesIO(message), language="en", beam_size=3)
-        for segment in segments:
-            result += segment.text
-        print(result)
-        result = ""
+    streaming_service = StreamingService(websocket=websocket)
+    # user_input = await streaming_service.process()
+    async for streaming in streaming_service.process():
+        if streaming:
+            user_input += streaming
+            logger.warning(user_input)
+    logger.error(user_input.replace("  ", " "))
 
 
 if __name__ == "__main__":
