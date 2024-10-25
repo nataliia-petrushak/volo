@@ -13,6 +13,7 @@ class BedrockService:
             credentials_profile_name=settings.AWS_PROFILE_NAME,
             aws_access_key_id=settings.AWS_SERVER_PUBLIC_KEY,
             aws_secret_access_key=settings.AWS_SERVER_SECRET_KEY,
+            aws_session_token=settings.AWS_SESSION_TOKEN,
             model_id=settings.MODEL_ID,
             streaming=True,
             region=settings.REGION_NAME,
